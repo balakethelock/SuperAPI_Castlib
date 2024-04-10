@@ -1,0 +1,8 @@
+## Interface: 11200
+## Title: SuperAPI Castlib |cFFFF8080-balake-|r
+## Notes: the companion compatibility addon: Casts library
+## Author: balake
+## Dependencies: SuperAPI
+## SavedVariables: SuperAPI_nameplatebars
+
+SuperAPI_Castlib.xml

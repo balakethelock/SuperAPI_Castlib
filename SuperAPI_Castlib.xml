@@ -1,0 +1,13 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
+  <Script file="SuperAPI_Castlib.lua"/>
+  <Frame name="SuperAPI_Castlib">
+    <Scripts>
+			<OnLoad>
+				SuperAPI_Castlib_Load();
+			</OnLoad>
+			<OnUpdate>
+				SuperAPI_Castlib_Update(arg1, arg2);
+			</OnUpdate>
+		</Scripts>
+	</Frame>
+</Ui>
