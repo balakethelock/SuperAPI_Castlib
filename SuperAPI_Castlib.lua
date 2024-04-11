@@ -20,7 +20,7 @@ function SuperAPI_Castlib_OnEvent()
 		if arg3 == "MAINHAND" or arg3 == "OFFHAND" then return end
 		if arg3 == "CAST" then
 			local currentCastInfo = SUPERAPI_SpellEvents[arg1]
-			if currentCastInfo and currentCastInfo.timer * 1.2 + currentCastInfo.start < GetTime() and arg4 ~= currentCastInfo.spell then
+			if not currentCastInfo or arg4 ~= currentCastInfo.spell then
 				return
 			end
 		end
