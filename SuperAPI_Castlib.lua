@@ -1,10 +1,17 @@
 SUPERAPI_SpellEvents = {}
 
+-- catch all nameplates
+local frames
+local initialized = 0
+local parentcount = 0
 
 function SuperAPI_Castlib_Load()
 	-- if client was not launched with the mod, shutdown
-	if not SetAutoloot then this:SetScript("OnUpdate", nil) return end
-	
+	if not SetAutoloot then
+		this:SetScript("OnUpdate", nil)
+		return
+	end
+
 	this:RegisterEvent("UNIT_CASTEVENT")
 	this:SetScript("OnEvent", SuperAPI_Castlib_OnEvent)
 end
@@ -16,19 +23,23 @@ end
 
 function SuperAPI_Castlib_OnEvent()
 	if (event == "UNIT_CASTEVENT") then
---		if UnitIsUnit(arg1, "player") then return end
-		if arg3 == "MAINHAND" or arg3 == "OFFHAND" then return end
+		--		if UnitIsUnit(arg1, "player") then return end
+		if arg3 == "MAINHAND" or arg3 == "OFFHAND" then
+			return
+		end
 		if arg3 == "CAST" then
 			local currentCastInfo = SUPERAPI_SpellEvents[arg1]
 			if not currentCastInfo or arg4 ~= currentCastInfo.spell then
 				return
 			end
 		end
-		arg5 = arg5  / 1000
+		arg5 = arg5 / 1000
 		SUPERAPI_SpellEvents[arg1] = nil
 		SUPERAPI_SpellEvents[arg1] = { target = arg2, spell = arg4, event = arg3, timer = arg5, start = GetTime() }
-		
-		if not SuperAPI_nameplatebars then SuperAPI_nameplatebars = true end
+
+		if not SuperAPI_nameplatebars then
+			SuperAPI_nameplatebars = true
+		end
 		-- If you want to disable this module's nameplate castbars, type in chat
 		-- "   /run SuperAPI_nameplatebars = false  "
 	end
@@ -49,11 +60,11 @@ function SuperAPI_NameplateCastbarInitialize(plate)
 	plate.castbar:SetWidth(110)
 	plate.castbar:SetHeight(8)
 	plate.castbar:SetPoint("TOPLEFT", plate, "BOTTOMLEFT", 12, 0)
-	plate.castbar:SetBackdrop({  bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
-    insets = {left = -1, right = -1, top = -1, bottom = -1} })
-	plate.castbar:SetBackdropColor(0,0,0,1)
+	plate.castbar:SetBackdrop({ bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
+	                            insets = { left = -1, right = -1, top = -1, bottom = -1 } })
+	plate.castbar:SetBackdropColor(0, 0, 0, 1)
 	plate.castbar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-	
+
 	if plate.castbar.spark == nil then
 		plate.castbar.spark = plate.castbar:CreateTexture(nil, "OVERLAY")
 		plate.castbar.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
@@ -61,14 +72,14 @@ function SuperAPI_NameplateCastbarInitialize(plate)
 		plate.castbar.spark:SetHeight(10)
 		plate.castbar.spark:SetBlendMode("ADD")
 	end
-	
+
 	if plate.castbar.text == nil then
 		plate.castbar.text = plate.castbar:CreateFontString(nil, "HIGH", "GameFontWhite")
 		plate.castbar.text:SetPoint("CENTER", plate.castbar, "CENTER", 0, 0)
 		local font, size, opts = plate.castbar.text:GetFont()
 		plate.castbar.text:SetFont(font, size - 4, "THINOUTLINE")
 	end
-	
+
 	if plate.castbar.icon == nil then
 		plate.castbar.icon = plate.castbar:CreateTexture(nil, "BORDER")
 		plate.castbar.icon:ClearAllPoints()
@@ -79,35 +90,47 @@ function SuperAPI_NameplateCastbarInitialize(plate)
 	end
 end
 
+function SuperAPI_NameplateUpdateFrames()
+	parentcount = WorldFrame:GetNumChildren()
+	if initialized < parentcount then
+		frames = { WorldFrame:GetChildren() }
+		initialized = parentcount
+	end
+end
+
 function SuperAPI_NameplateUpdateAll(elapsed)
-	local frames = { WorldFrame:GetChildren() }
-	for i, plate in ipairs(frames) do
-		if plate then 
+	SuperAPI_NameplateUpdateFrames()
+
+	for _, plate in ipairs(frames) do
+		if plate then
 			if plate:IsShown() and plate:IsObjectType("Button") then
 				local unitGUID = plate:GetName(1)
 				if plate.castbar == nil then
 					SuperAPI_NameplateCastbarInitialize(plate)
 				end
 				local unitCastInfo = SUPERAPI_SpellEvents[unitGUID]
-				
 				if not unitCastInfo or not SuperAPI_nameplatebars then
 					plate.castbar:Hide()
 				else
-				
+
 					plate.castbar:Show()
 					plate.castbar:SetMinMaxValues(unitCastInfo.start, unitCastInfo.start + unitCastInfo.timer)
-					
+
 					plate.castbar:SetValue(GetTime())
-					local sparkPosition = min(max(plate.castbar:GetWidth() *  (GetTime() - unitCastInfo.start)/ unitCastInfo.timer , 0), plate.castbar:GetWidth())
-							
+					local sparkPosition = min(max(plate.castbar:GetWidth() * (GetTime() - unitCastInfo.start) / unitCastInfo.timer, 0), plate.castbar:GetWidth())
+
 					local spellname, _, spellicon = SpellInfo(unitCastInfo.spell)
-					if not spellname then spellname = "UNKNOWN SPELL" end
-					if not spellicon then spellicon = "Interface\\Icons\\INV_Misc_QuestionMark" end
-					
+					if not spellname then
+						spellname = "UNKNOWN SPELL"
+					end
+					if not spellicon then
+						spellicon = "Interface\\Icons\\INV_Misc_QuestionMark"
+					end
+
 					plate.castbar.text:SetText(spellname)
 					plate.castbar.icon:SetTexture(spellicon)
 					plate.castbar:SetAlpha(1 - GetTime() + unitCastInfo.start + unitCastInfo.timer)
-					
+
 					if unitCastInfo.event == "START" then
 						plate.castbar:SetStatusBarColor(1.0, 0.7, 0.0)
 						plate.castbar:SetMinMaxValues(unitCastInfo.start, unitCastInfo.start + unitCastInfo.timer)
@@ -132,11 +155,10 @@ function SuperAPI_NameplateUpdateAll(elapsed)
 	end
 end
 
-
 function NameplateInterruptCast(unitGUID, spellname, spellicon)
 	local frames = { WorldFrame:GetChildren() }
 	for i, plate in ipairs(frames) do
-		if plate then 
+		if plate then
 			if plate:IsShown() and plate:IsObjectType("Button") then
 				if plate:GetName(1) == unitGUID then
 					if plate.castbar == nil then
@@ -144,11 +166,11 @@ function NameplateInterruptCast(unitGUID, spellname, spellicon)
 						plate.castbar:SetWidth(110)
 						plate.castbar:SetHeight(8)
 						plate.castbar:SetPoint("TOPLEFT", plate, "BOTTOMLEFT", 12, 0)
-						plate.castbar:SetBackdrop({  bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
-                        insets = {left = -1, right = -1, top = -1, bottom = -1} })
-						plate.castbar:SetBackdropColor(0,0,0,1)
+						plate.castbar:SetBackdrop({ bgFile = [[Interface\Tooltips\UI-Tooltip-Background]],
+						                            insets = { left = -1, right = -1, top = -1, bottom = -1 } })
+						plate.castbar:SetBackdropColor(0, 0, 0, 1)
 						plate.castbar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-						
+
 						if plate.castbar.spark == nil then
 							plate.castbar.spark = plate.castbar:CreateTexture(nil, "OVERLAY")
 							plate.castbar.spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
@@ -156,14 +178,14 @@ function NameplateInterruptCast(unitGUID, spellname, spellicon)
 							plate.castbar.spark:SetHeight(32)
 							plate.castbar.spark:SetBlendMode("ADD")
 						end
-						
+
 						if plate.castbar.text == nil then
 							plate.castbar.text = plate.castbar:CreateFontString(nil, "HIGH", "GameFontWhite")
 							plate.castbar.text:SetPoint("CENTER", plate.castbar, "CENTER", 0, 0)
 							local font, size, opts = plate.castbar.text:GetFont()
 							plate.castbar.text:SetFont(font, size - 4, "THINOUTLINE")
 						end
-						
+
 						if plate.castbar.icon == nil then
 							plate.castbar.icon = plate.castbar:CreateTexture(nil, "BORDER")
 							plate.castbar.icon:ClearAllPoints()
@@ -188,7 +210,7 @@ end
 
 function NameplateCastbarEnd(this)
 	this:SetValue(0)
-	this:SetMinMaxValues(0,1)
+	this:SetMinMaxValues(0, 1)
 	this.text:SetText(" ")
 	this.icon:SetTexture(nil)
 	this:Hide()
